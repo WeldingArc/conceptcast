@@ -815,7 +815,7 @@ b { font-weight: 650; }
     h = '<div class="kick">' + T("conceptKick", { chapter: esc(chn.name), n: sc.ci + 1 }) + "</div>" +
       '<h1 class="title">' + c.title + '</h1><p class="one rv" data-r="one">' + c.one + "</p>" +
       '<div class="visbox">' + c.vis.map(function (v, vi) { return visHTML(v, vi); }).join("") + "</div>" +
-      '<div class="recap"><div class="hook rv" data-r="hook"><div class="lab">' + T("hookLabel") + '</div><div class="hk">' + c.hook + "</div></div>" +
+      '<div class="recap">' + (c.hook ? '<div class="hook rv" data-r="hook"><div class="lab">' + T("hookLabel") + '</div><div class="hk">' + c.hook + "</div></div>" : "") +
       (c.terms.length ? '<div class="terms rv" data-r="terms"><div class="lab">' + T("termsLabel") + '</div><div class="chips">' + c.terms.map(function (t, k) { return '<span class="chip-t" style="transition-delay:' + (k * 0.12).toFixed(2) + 's">' + t + "</span>"; }).join("") + "</div></div>" : "") +
       (c.ex ? '<div class="ex rv" data-r="ex"><div class="lab">' + T("exLabel") + '</div><p>' + c.ex + "</p></div>" : "") +
       "</div>";
@@ -983,7 +983,7 @@ b { font-weight: 650; }
         el.classList.toggle("now", inRecap && n === order);
         if (inRecap && n === order) nowEl = el;
       });
-      if (t === "hook" || t === "terms") { S.seen[sc.card.id] = 1; saveSoon(); }
+      if (t === "hook" || t === "terms" || P.b === beats.length - 1) { if (!S.seen[sc.card.id]) { S.seen[sc.card.id] = 1; saveSoon(); } }
       if (nowEl) keepInView(nowEl);
       else if (t === "title" || t === "one") st.scrollTop = 0;
     }

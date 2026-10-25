@@ -67,7 +67,7 @@ add `symbols` for words like "up" or "that is" in your language.
   "id": "ch1",                                               // optional (default ch1, ch2, …)
   "name": "How memory works",                                // required
   "sub": "Three stages, a small workbench, and a fast fade",   // one line under the chapter title
-  "chips": ["Weeks 2–3", "6 questions · 18 points"],         // optional tags on intro and home
+  "chips": ["Unit 1", "Exam: 5 questions"],                  // optional tags on intro and home
   "color": "#2F7A80",                                        // optional; muted, deep tones read best
   "sayIntro": "...", "sayOutro": "...",                      // optional narration overrides
   "cards": [ ... ]                                           // required, at least one
@@ -131,6 +131,7 @@ Required: `id` (unique), `type` (`mc` or `ox`), `q`. For `mc`: `opts` (2 or more
 | `<id>.html` | The app. Double-click to open |
 | `<id>.body.html` | Same page without `<html>/<head>`, for hosts that add their own wrapper |
 | `build/narration.txt` | Every spoken line for review: concept beats, then fixed lines, then quiz questions and wrong-answer lines |
+| `build/review.txt` | Each card with its attached questions and correct answers: the input for the Gate A review |
 | `build/voice_lines.json` | `{clip_id: text}` plus the voice settings, for `tts_render.py` |
 | `voice/raw/` | Recorded clips as delivered by the engine, plus `manifest.json` |
 | `voice/clips/` | Trimmed clips that get embedded, plus `manifest.json` |

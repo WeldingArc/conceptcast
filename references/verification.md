@@ -37,8 +37,8 @@ Output one JSON object:
 Report only; do not edit files.
 ```
 
-To produce the dump, iterate the course's cards and print each card's JSON followed by its
-questions with options, correct answer and explanation.
+`build.py` writes this dump to `build/review.txt` on every build: each card's content followed by
+its questions, with options, the correct answer and the explanation.
 
 ## Mechanical checks (every item, never samples)
 

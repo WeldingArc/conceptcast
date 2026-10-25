@@ -9,7 +9,8 @@ Outputs (in --out, default: the course file's folder; this folder is also the CO
 the tts_*.py scripts take):
   <id>.html               the app: one self-contained file, double-click to open
   <id>.body.html          the same page without <html>/<head> wrappers (for hosts that add their own)
-  build/narration.txt     every spoken line (beats, then quiz lines, then fixed lines), for review
+  build/narration.txt     every spoken line (beats, then fixed lines, then quiz lines), for review
+  build/review.txt        each card with its attached questions and correct answers (Gate A input)
   build/voice_lines.json  {clip_id: text} for scripts/tts_render.py
 Recorded clips found in OUT/voice/clips/<id>.mp3 are embedded; lines without a clip fall back
 to the browser's built-in voice at runtime.
@@ -87,7 +88,8 @@ class Speaker:
 
         def paren(m):
             inner = m.group(1)
-            if re.search(r"\d{4}", inner):                        # citations: (Author, 1999)
+            parts = [x.strip() for x in inner.split(";")]
+            if all(re.fullmatch(r"[^\d]*\b(1[6-9]|20)\d\d[a-z]?", x) for x in parts):   # citations: (Author, 1999; X, 2001b)
                 return ""
             if self.lang in NON_LATIN and re.fullmatch(r"[A-Za-z0-9 .,&'’\"“”\-:;+−·!?\u0001]+", inner):
                 return ""                                         # Latin gloss inside a non-Latin sentence
@@ -418,8 +420,12 @@ def build(course_path, out_dir=None, embed_audio=True):
     chapters = []
     for ci, ch in enumerate(course["chapters"]):
         n = len(ch["cards"])
-        intro = ch.get("sayIntro") or ph["intro"].format(name=ch["name"], sub=end(say(ch.get("sub", ""))) if ch.get("sub") else "", n=n).replace("  ", " ")
-        outro = ch.get("sayOutro") or ph["outro"].format(name=ch["name"])
+        cname = say(ch["name"])
+        intro = ch.get("sayIntro") or ph["intro"].format(name=cname, sub=end(say(ch.get("sub", ""))) if ch.get("sub") else "", n=n).replace("  ", " ")
+        outro = ch.get("sayOutro") or ph["outro"].format(name=cname)
+        for k, line in (("intro", intro), ("outro", outro)):
+            if risky.search(allow.sub("", line)):
+                problems.append(f"chapter {ci + 1} {k}: check how this reads aloud: {line}")
         script.append(f"\n######## {ch['name']}\n[intro] {intro}")
         cards = []
         for c in ch["cards"]:
@@ -515,6 +521,23 @@ def build(course_path, out_dir=None, embed_audio=True):
             f"</head>\n<body>\n{body}\n</body>\n</html>\n")
     (out / f"{cid}.html").write_text(full, encoding="utf-8")
     (out / "build" / "narration.txt").write_text("\n".join(script), encoding="utf-8")
+    # Gate A input: each card with the questions attached to it (correct answer marked)
+    rev = []
+    plain = lambda x: html.unescape(re.sub(r"<[^>]+>", "", str(x)))
+    for ch in course["chapters"]:
+        rev.append(f"\n######## {ch['name']}")
+        for c in ch["cards"]:
+            rev.append(f"\n=== CARD {c['id']} · {c['title']}")
+            rev.append(json.dumps({k: c[k] for k in ("one", "vis", "hook", "terms", "ex") if k in c}, ensure_ascii=False))
+            for qid in c.get("qids", []):
+                q = bank_by[qid]
+                if q["type"] == "mc":
+                    rev.append(f"  Q {qid} [multiple choice] {plain(q['q'])}\n     options: {' / '.join(map(plain, q['opts']))}"
+                               f"\n     correct: {plain(q['opts'][q['a']])}\n     explanation: {plain(q.get('exp', ''))}")
+                else:
+                    rev.append(f"  Q {qid} [true/false] {plain(q['q'])}\n     correct: {'true' if q['a'] == 'O' else 'false'}"
+                               f"\n     explanation: {plain(q.get('exp', ''))}")
+    (out / "build" / "review.txt").write_text("\n".join(rev), encoding="utf-8")
     node = shutil.which("node")
     if node:  # catch template syntax errors before anyone opens the app
         js = out / "build" / "player_check.js"

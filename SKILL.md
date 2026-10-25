@@ -89,7 +89,8 @@ Write `course.json` (or `course.py` defining `COURSE = {...}`): chapters → car
 - **Attach questions:** attach every bank question to exactly one card (`qids`), on the card
   that teaches its answer.
 
-**Gate A — independent content review.** Spawn a fresh subagent with the prompt in
+**Gate A — independent content review.** Build once (Step 4) to get `build/review.txt` (every
+card with its questions and correct answers), then spawn a fresh subagent with the prompt in
 `references/verification.md`. It checks every claim against the notes, plus coverage: could
 someone who watched only that card answer each of its questions? Apply the fixes. Add any fact
 that a question needs but the card doesn't teach.
