@@ -89,7 +89,8 @@ class Speaker:
         def paren(m):
             inner = m.group(1)
             parts = [x.strip() for x in inner.split(";")]
-            cite = r"(?:[^\d]*[A-Z\uAC00-\uD7A3][^\d]*[,\s])?\s*(1[6-9]|20)\d\d[a-z]?"
+            # a bare year, or "Name, 1999" / "Name et al. 1999" / "Name 등, 1999" (comma or et al. before the year)
+            cite = r"(?:[^\d]*[A-Z\uAC00-\uD7A3][^\d]*(?:,|\bet al\.?|등)\s*)?(1[6-9]|20)\d\d[a-z]?"
             if all(re.fullmatch(cite, x) for x in parts):   # citations: (2003), (Author, 1999; X, 2001b)
                 return ""
             if self.lang in NON_LATIN and re.fullmatch(r"[A-Za-z0-9 .,&'’\"“”\-:;+−·!?\u0001]+", inner):
@@ -438,7 +439,7 @@ def build(course_path, out_dir=None, embed_audio=True):
         balance_options(bank, course.get("id", "course"))
     bank_by = {q["id"]: q for q in bank}
     problems, script, used = list(warn), [], {}
-    risky = re.compile(r"[<>=✗○→↔↑↓÷×~\"+−()\[\]]" + (r"|[A-Za-z]{2,}" if say.lang in NON_LATIN else ""))
+    risky = re.compile(r"[<>=✗○→↔↑↓÷×~\"+−()\[\]]|\b[Vv][Ss]\b\.?" + (r"|[A-Za-z]{2,}" if say.lang in NON_LATIN else ""))
     allow = re.compile("|".join(map(re.escape, course.get("allowInNarration", []))) or r"(?!)")
 
     chapters = []

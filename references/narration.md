@@ -24,7 +24,9 @@ lines (quiz feedback, results, voice sample), then every quiz question and wrong
 ## Cleanup rules (automatic)
 
 - Markup is stripped. `**bold**` is screen-only.
-- Parentheses containing a 4-digit year are dropped: citations are for the eye.
+- Citations in parentheses are dropped (they are for the eye): a bare year "(2003)", or a name with a comma
+  or "et al." before the year, e.g. "(Smith, 1999; Lee et al. 2004)". Other parentheses are read. If an aside
+  like "(World War II, 1939)" should be spoken, write the line yourself with an override.
 - In non-Latin-script languages, Latin-only glosses in parentheses are dropped (a Korean term
   followed by "(complementarity)" is read as the Korean term only). A parenthesis glued to a
   following particle is dropped too.
