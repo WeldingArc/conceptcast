@@ -295,8 +295,8 @@ b { font-weight: 650; }
 .carr svg { width: 18px; height: 18px; }
 
 /* bars */
-.bars { display: grid; gap: 14px; text-align: left; width: 100%; max-width: 620px; margin: 0 auto; }
-.barrow { display: grid; grid-template-columns: minmax(64px, max-content) minmax(0, 1fr) max-content; gap: 10px; align-items: center; position: relative; }
+.bars { display: grid; grid-template-columns: minmax(56px, max-content) minmax(0, 1fr) max-content; gap: 14px 10px; text-align: left; width: 100%; max-width: 620px; margin: 0 auto; }
+.barrow { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; position: relative; }
 .bl { font-size: 15px; font-weight: 500; text-align: right; max-width: 34vw; overflow-wrap: break-word; word-break: normal; hyphens: auto; }
 .bt { height: 30px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 7%, transparent); overflow: hidden; }
 .bt i { display: block; height: 100%; width: 0; background: var(--cc); border-radius: 8px; transition: width 1s .1s var(--ease); }
@@ -459,7 +459,6 @@ b { font-weight: 650; }
 
 @media (max-width: 420px) {
   .scene-in { gap: 14px; }
-  .barrow { grid-template-columns: minmax(56px, max-content) minmax(0, 1fr) max-content; }
   .ctrl { gap: 2px; }
   .playbtn { width: 58px; height: 58px; margin: 0 4px; }
   .ctrl .pill { padding: 4px 9px; font-size: 13px; }

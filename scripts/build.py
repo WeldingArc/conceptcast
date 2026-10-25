@@ -89,7 +89,8 @@ class Speaker:
         def paren(m):
             inner = m.group(1)
             parts = [x.strip() for x in inner.split(";")]
-            if all(re.fullmatch(r"[^\d]*\b(1[6-9]|20)\d\d[a-z]?", x) for x in parts):   # citations: (Author, 1999; X, 2001b)
+            cite = r"(?:[^\d]*[A-Z\uAC00-\uD7A3][^\d]*[,\s])?\s*(1[6-9]|20)\d\d[a-z]?"
+            if all(re.fullmatch(cite, x) for x in parts):   # citations: (2003), (Author, 1999; X, 2001b)
                 return ""
             if self.lang in NON_LATIN and re.fullmatch(r"[A-Za-z0-9 .,&'’\"“”\-:;+−·!?\u0001]+", inner):
                 return ""                                         # Latin gloss inside a non-Latin sentence
@@ -275,7 +276,7 @@ def validate(course):
             opts = q.get("opts")
             if not isinstance(opts, list) or len(opts) < 2:
                 errs.append(f"{where}: a multiple-choice question needs 'opts' with at least 2 options")
-            elif not isinstance(q.get("a"), int) or not 0 <= q["a"] < len(opts):
+            elif isinstance(q.get("a"), bool) or not isinstance(q.get("a"), int) or not 0 <= q["a"] < len(opts):
                 errs.append(f"{where}: 'a' must be the index of the correct option, 0..{len(opts) - 1} (got {q.get('a')!r})")
         elif q.get("type") == "ox":
             a = str(q.get("a")).strip().lower()
@@ -305,12 +306,20 @@ def validate(course):
             for f in ("title", "one"):
                 if not c.get(f):
                     errs.append(f"card {cid}: missing '{f}'")
-            for qid in c.get("qids", []):
+            for qid in (c.get("qids") if isinstance(c.get("qids", []), list) else []):
                 if qid not in bank_ids:
                     errs.append(f"card {cid}: question '{qid}' is not in the bank (the quiz would crash)")
                 attached.setdefault(qid, []).append(cid)
+            if not isinstance(c.get("vis", []), list):
+                errs.append(f"card {cid}: 'vis' must be a list of diagrams")
+                continue
+            if not isinstance(c.get("qids", []), list):
+                errs.append(f"card {cid}: 'qids' must be a list of question ids")
             for vi, v in enumerate(c.get("vis", [])):
                 where = f"card {cid}, diagram {vi + 1}"
+                if not isinstance(v, dict):
+                    errs.append(f"{where}: each diagram is an object like {{\"type\": \"steps\", ...}}")
+                    continue
                 tp = v.get("type")
                 if tp not in REQUIRED:
                     errs.append(f"{where}: unknown diagram type {tp!r} (allowed: {sorted(REQUIRED)})")
@@ -330,7 +339,7 @@ def validate(course):
                 if tp == "bars":
                     if any(len(x) != 2 or not isinstance(x[1], (int, float)) for x in v.get("items", [])):
                         errs.append(f"{where}: bars items are [label, number]")
-                    elif v.get("star") is not None and not (isinstance(v["star"], int) and 0 <= v["star"] < len(v["items"])):
+                    elif v.get("star") is not None and (isinstance(v["star"], bool) or not (isinstance(v["star"], int) and 0 <= v["star"] < len(v["items"]))):
                         errs.append(f"{where}: 'star' must be the index of a bar")
                 if tp == "flow" and any(len(b) < 2 or (len(b) > 2 and b[2] not in ("good", "bad", "")) for b in v.get("branch", [])):
                     errs.append(f"{where}: each branch is [condition, outcome] or [condition, outcome, \"good\" | \"bad\"]")
@@ -338,6 +347,18 @@ def validate(course):
                     errs.append(f"{where}: every table row needs as many cells as 'head'")
                 if tp == "steps" and any(not isinstance(x, list) or len(x) != 2 for x in v.get("items", [])):
                     errs.append(f"{where}: steps items are [name, description] (use \"\" for no description)")
+                if tp in ("big", "timeline") and any(not isinstance(x, list) or len(x) != 2 for x in v.get("items", [])):
+                    errs.append(f"{where}: {tp} items are [headline, text] pairs")
+                if tp == "tiles" and any(not isinstance(x, str) for x in v.get("items", [])):
+                    errs.append(f"{where}: tiles items are plain strings")
+                if tp == "groups" and any(not isinstance(g, dict) or not g.get("name") or not isinstance(g.get("items"), list)
+                                          for g in v.get("groups", [])):
+                    errs.append(f"{where}: each group is {{\"name\": ..., \"items\": [...]}} (items may be empty)")
+                if tp == "rows" and any(not isinstance(r, list) or len(r) != 2 or not isinstance(r[1], list) for r in v.get("rows", [])):
+                    errs.append(f"{where}: rows are [label, [chain item, chain item, ...]]")
+                for f in ("items", "groups", "rows", "nodes", "head"):
+                    if f in v and not isinstance(v[f], list):
+                        errs.append(f"{where}: '{f}' must be a list")
     for qid, cs in attached.items():
         if len(cs) > 1:
             errs.append(f"question '{qid}' is attached to several cards {cs}; attach each question to exactly one card")
@@ -386,7 +407,10 @@ def build(course_path, out_dir=None, embed_audio=True):
     template_keys = set(re.findall(r'T\("([A-Za-z0-9]+)"', tpl)) - {"sayWrongPrefix"}
     warn = []
     if not has_pack:
-        miss_ui = sorted(k for k in template_keys if k not in course.get("ui", {}))
+        # start from no English at all: "_one" singulars are optional (the translated plural form is used instead)
+        ui = {k: v for k, v in ui.items() if not k.endswith("_one")}
+        need_ui = template_keys | {"oxKeysTrue", "oxKeysFalse"}
+        miss_ui = sorted(k for k in need_ui if k not in course.get("ui", {}))
         miss_ph = sorted(k for k in PHRASES["en"] if k not in course.get("phrases", {}))
         if (miss_ui or miss_ph) and not course.get("allowEnglishFallback"):
             errs.append(f"there is no '{lang}' language pack, and the course does not translate "
@@ -523,7 +547,7 @@ def build(course_path, out_dir=None, embed_audio=True):
     (out / "build" / "narration.txt").write_text("\n".join(script), encoding="utf-8")
     # Gate A input: each card with the questions attached to it (correct answer marked)
     rev = []
-    plain = lambda x: html.unescape(re.sub(r"<[^>]+>", "", str(x)))
+    plain = lambda x: html.unescape(re.sub(r"<[^>]+>", "", str(x))).replace("**", "")
     for ch in course["chapters"]:
         rev.append(f"\n######## {ch['name']}")
         for c in ch["cards"]:

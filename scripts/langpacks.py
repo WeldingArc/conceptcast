@@ -130,9 +130,10 @@ SYMBOLS = {
            (" = ", ", 즉 "), (" vs ", " 대 "), ("VS", "대"), ("✗", " 아님"), ("○", " 맞음"), (" & ", ", "), ("&", ", "),
            ("cf.", "참고로")],
 }
-# Used for a language without a pack, before the course's own "symbols": punctuation only, no words
-NEUTRAL_SYMBOLS = [(" → ", ", "), ("→", ", "), (" ↔ ", ", "), ("↔", ", "), (" ↑", ""), ("↑", ""), (" ↓", ""), ("↓", ""),
-                   (" = ", ", "), (" vs ", ", "), (" VS ", ", "), ("✗", ""), ("○", ""), (" & ", ", "), ("&", ", ")]
+# Used for a language without a pack, after the course's own "symbols": only meaning-free punctuation.
+# Symbols that carry meaning (↑ ↓ = ✗ ○ vs) are left in place so the narration lint flags them until the
+# course gives them words in "symbols".
+NEUTRAL_SYMBOLS = [(" → ", ", "), ("→", ", "), (" ↔ ", ", "), ("↔", ", "), (" & ", ", "), ("&", ", ")]
 
 # Shared by every language
 COMMON_SYMBOLS = [("**", ""), ("…", ""), ("...", ""), ("①", ""), ("②", ""), ("③", ""), ("④", ""),

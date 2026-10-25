@@ -53,12 +53,15 @@ Required: `chapters`. Set `id` (it names the output file and the saved progress;
 3. Put the result in the course file.
 
 Keys ending in `_one` are the singular form used when the count is 1 (e.g. `conceptsN_one`: "1
-concept"); omit them if your language doesn't inflect. `oxKeysTrue` / `oxKeysFalse` are the
-keyboard letters for true/false, e.g. `"VO"` / `"FX"` for Spanish *verdadero/falso*.
+concept"). They are optional: without one, the translated plural form is used. `oxKeysTrue` /
+`oxKeysFalse` are required: the keyboard letters for true/false, e.g. `"VO"` / `"FX"` for Spanish
+*verdadero/falso*.
 
 Without a pack the build refuses to run until every string is translated, because otherwise the
-app comes out half in English. Symbols default to punctuation-only rules (no English words);
-add `symbols` for words like "up" or "that is" in your language.
+app comes out half in English. For spoken symbols, only meaning-free punctuation (→ ↔ &) is
+handled automatically. Symbols that carry meaning (↑ ↓ = ✗ ○ vs) stay in the text, and the
+narration lint flags every line that contains one, until you give them words in `symbols`:
+for example `[["↑", " sube"], ["↓", " baja"], [" = ", ", es decir, "]]`.
 
 ## Chapters
 
