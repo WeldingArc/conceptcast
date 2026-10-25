@@ -1,0 +1,125 @@
+{
+  "id": "memory-basics",
+  "title": "How Memory Works",
+  "subtitle": "ConceptCast sample",
+  "lang": "en",
+  "voice": { "engine": "edge", "voice": "en-US-AndrewMultilingualNeural", "label": "Andrew (neural voice)" },
+  "footer": "A ConceptCast sample course. Replace it with your own material.",
+  "names": {},
+  "allowInNarration": [],
+  "chapters": [
+    {
+      "id": "ch1",
+      "name": "How memory works",
+      "sub": "Three stages, a small workbench, and a fast fade",
+      "chips": ["Sample chapter"],
+      "cards": [
+        {
+          "id": "m-stages",
+          "title": "Three stages of memory",
+          "terms": ["encoding", "storage", "retrieval"],
+          "one": "Every memory goes **in**, **stays**, and comes **back out**.",
+          "vis": [
+            { "type": "flow", "nodes": ["Encoding: getting information in", "Storage: keeping it over time", "Retrieval: getting it back out"] },
+            { "type": "def", "term": "Retrieval", "text": "Accessing stored information and bringing it back into **awareness**" }
+          ],
+          "hook": "In, keep, out",
+          "ex": "Remembering a friend's name at a party is retrieval.",
+          "qids": ["q1"]
+        },
+        {
+          "id": "m-wm",
+          "title": "Working memory is small",
+          "terms": ["working memory", "chunking"],
+          "one": "You can only juggle **a few things** at once, so **group them**.",
+          "vis": [
+            { "type": "big", "items": [["7 ± 2", "Miller (1956): items people can hold at once"], ["about 4", "Cowan (2001): a tighter estimate, counted in chunks"]],
+              "say": { "0": "Seven, plus or minus two. Miller's classic estimate of how many items people can hold at once.", "1": "About four. Cowan's tighter estimate, counted in chunks." } },
+            { "type": "rows", "title": "Chunking", "rows": [["9 letters", ["F B I C I A U S A"]], ["3 chunks", ["FBI", "CIA", "USA"]]],
+              "say": { "-1": "Chunking.", "0": "Nine separate letters are hard to hold.", "1": "Three familiar chunks are easy. F B I, C I A, U S A." } }
+          ],
+          "hook": "Group it to hold it",
+          "qids": ["q2"]
+        },
+        {
+          "id": "m-curve",
+          "title": "The forgetting curve",
+          "terms": ["forgetting curve", "Ebbinghaus"],
+          "one": "Forgetting is **fastest right after learning**, then slows down.",
+          "vis": [
+            { "type": "bars", "title": "Ebbinghaus (1885): savings when relearning", "unit": "%", "max": 100,
+              "items": [["20 min", 58], ["1 hour", 44], ["1 day", 34], ["31 days", 21]],
+              "say": { "-1": "Ebbinghaus measured how much easier it was to relearn a list later." } },
+            { "type": "warn", "text": "The drop is **steepest in the first hour**; after that it flattens." }
+          ],
+          "hook": "Steep first, then flat",
+          "qids": ["q3"]
+        }
+      ]
+    },
+    {
+      "id": "ch2",
+      "name": "Studying that sticks",
+      "sub": "Space it out, test yourself, distrust the glow of rereading",
+      "chips": ["Sample chapter"],
+      "cards": [
+        {
+          "id": "s-spacing",
+          "title": "The spacing effect",
+          "terms": ["spacing effect", "distributed practice", "massed practice"],
+          "one": "The **same study time** works better **spread over days** than crammed into one sitting.",
+          "vis": [
+            { "type": "vs", "left": "Massed (cramming)", "right": "Spaced", "win": "right", "winText": "Lasts longer",
+              "rows": [["How", "One long session", "Several shorter sessions over days"], ["Long-term retention", "Lower", "Higher"]] }
+          ],
+          "hook": "Same hours, spread out",
+          "qids": ["q4"]
+        },
+        {
+          "id": "s-testing",
+          "title": "The testing effect",
+          "terms": ["testing effect", "retrieval practice"],
+          "one": "**Pulling** information out of memory strengthens it more than **reading it again**.",
+          "vis": [
+            { "type": "steps", "title": "Retrieval practice in three steps",
+              "items": [["Close the notes", ""], ["Write or say what you remember", "The effort of recalling is the point"], ["Check and fill the gaps", "Then try again another day"]] },
+            { "type": "table", "head": ["Tested after", "Reread", "Practiced recall"],
+              "rows": [["5 minutes", "Ahead", "Behind"], ["1 week", "Behind", "Ahead"]],
+              "say": { "0": "Tested after five minutes, rereading is slightly ahead.", "1": "Tested after a week, practiced recall is clearly ahead. Roediger and Karpicke, 2006." } }
+          ],
+          "hook": "Pull it out, don't pour it in",
+          "qids": ["q5"]
+        },
+        {
+          "id": "s-fluency",
+          "title": "The fluency trap",
+          "terms": ["illusion of competence"],
+          "one": "Rereading makes material **feel familiar**, and familiarity is easily **mistaken for knowing**.",
+          "vis": [
+            { "type": "warn", "text": "**Familiar is not the same as remembered.** If you can't recall it with the book closed, you don't own it yet." }
+          ],
+          "hook": "Close the book to find out",
+          "qids": ["q6"]
+        }
+      ]
+    }
+  ],
+  "bank": [
+    { "id": "q1", "type": "mc", "q": "Which memory stage means getting stored information **back out**?",
+      "opts": ["Retrieval", "Encoding", "Storage", "Consolidation"], "a": 0,
+      "exp": "Retrieval is accessing stored information. Encoding puts it in; storage keeps it.", "ref": "Chapter 1 · Three stages of memory" },
+    { "id": "q2", "type": "ox", "q": "Chunking lets working memory hold more by grouping items into meaningful units.", "a": "O",
+      "exp": "Grouping nine letters into three familiar chunks (FBI, CIA, USA) makes them easy to hold.", "ref": "Chapter 1 · Working memory" },
+    { "id": "q3", "type": "mc", "q": "On Ebbinghaus's forgetting curve, when is forgetting **fastest**?",
+      "opts": ["Shortly after learning", "After about a week", "After about a month", "It is steady over time"], "a": 0,
+      "exp": "Savings fall from about 58% at 20 minutes to 44% at one hour, then the curve flattens.", "ref": "Chapter 1 · The forgetting curve" },
+    { "id": "q4", "type": "ox", "q": "Cramming gives better long-term retention than spacing the same study time.", "a": "X",
+      "exp": "The spacing effect: the same total time spread over days is retained longer.", "ref": "Chapter 2 · The spacing effect" },
+    { "id": "q5", "type": "mc", "q": "In Roediger & Karpicke (2006), which group remembered more **a week later**?",
+      "opts": ["Students who practiced recalling the text", "Students who reread the text", "Both remembered the same", "Neither remembered anything"], "a": 0,
+      "exp": "Rereading was slightly ahead at five minutes, but practiced recall was clearly ahead after a week.", "ref": "Chapter 2 · The testing effect" },
+    { "id": "q6", "type": "mc", "q": "Why can rereading feel effective even when it isn't?",
+      "opts": ["Familiarity is mistaken for knowing", "Rereading takes longer than testing", "Rereading uses up working memory", "Rereading blocks chunking"], "a": 0,
+      "exp": "Material you've just reread feels fluent, and that fluency is easily mistaken for being able to recall it.", "ref": "Chapter 2 · The fluency trap" }
+  ]
+}

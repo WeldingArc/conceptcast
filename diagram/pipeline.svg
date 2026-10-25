@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" width="1200" height="1400" role="img" aria-labelledby="t d">
+  <title id="t">ConceptCast pipeline</title>
+  <desc id="d">Eight build phases from asking the learner to verified delivery, with three gates, plus card anatomy, the learner loop, the voice fallback chain, and accuracy rules.</desc>
+  <style>
+    .bg { fill: #F4F5F7; }
+    .box { fill: #FFFFFF; stroke: #DCE1E8; stroke-width: 1.2; }
+    .h1 { font: 600 30px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #161D27; letter-spacing: .02em; }
+    .sub { font: 400 15.5px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #586273; }
+    .h2 { font: 600 18px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #161D27; }
+    .h3 { font: 600 15px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #161D27; }
+    .tx { font: 400 13px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #465062; }
+    .sm { font: 400 12px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #586273; }
+    .out { font: 600 12.5px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .gate { font: 600 12.5px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #8C6D3A; }
+    .num { font: 500 16px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #FFFFFF; text-anchor: middle; dominant-baseline: central; }
+    .mono { font: 500 12.5px "SF Mono", Menlo, Consolas, monospace; fill: #2C3A4A; }
+    .lab { font: 700 11px Inter, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #586273; letter-spacing: .12em; }
+    .arrow { stroke: #9AA4B2; stroke-width: 2; fill: none; marker-end: url(#ah); }
+    .loop { stroke: #2F7A80; stroke-width: 1.8; fill: none; marker-end: url(#ah2); }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9AA4B2"/></marker>
+    <marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2F7A80"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="1400" rx="24"/>
+  <text class="h1" x="40" y="62">ConceptCast</text>
+  <text class="sub" x="40" y="92">How to turn study material into a narrated, auto-playing lesson app, and prove it is right.</text>
+
+  <!-- ============ build pipeline (left) ============ -->
+  <text class="lab" x="40" y="128">BUILD PIPELINE</text>
+
+  <!-- 1 -->
+  <g transform="translate(40,140)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#5B5FA8"/>
+    <circle cx="40" cy="34" r="16" fill="#5B5FA8"/><text class="num" x="40" y="34">1</text>
+    <text class="h2" x="68" y="40">Ask first</text>
+    <text class="tx" x="68" y="64">Sources and scope (what is in and out of the exam), language, the learner's device</text>
+    <text class="tx" x="68" y="82">and browser, and the voice: browser · Microsoft neural · Gemini · OpenAI · ElevenLabs · local.</text>
+    <text class="out" x="68" y="101" fill="#5B5FA8">→ course.json skeleton + voice choice</text>
+  </g>
+  <path class="arrow" d="M400 254 V272"/>
+  <!-- 2 -->
+  <g transform="translate(40,276)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#2F7A80"/>
+    <circle cx="40" cy="34" r="16" fill="#2F7A80"/><text class="num" x="40" y="34">2</text>
+    <text class="h2" x="68" y="40">Ingest the material</text>
+    <text class="tx" x="68" y="64">Convert PDFs and slides to Markdown, transcribe image-only pages, and fix extraction</text>
+    <text class="tx" x="68" y="82">glitches against the rendered page. Files from other courses stay out.</text>
+    <text class="out" x="68" y="101" fill="#2F7A80">→ notes in Markdown = the single source of truth</text>
+  </g>
+  <path class="arrow" d="M400 390 V408"/>
+  <!-- 3 -->
+  <g transform="translate(40,412)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#8A5A2B"/>
+    <circle cx="40" cy="34" r="16" fill="#8A5A2B"/><text class="num" x="40" y="34">3</text>
+    <text class="h2" x="68" y="40">Question bank</text>
+    <text class="tx" x="68" y="64">Multiple-choice and true/false questions in the notes' exact wording, each with an</text>
+    <text class="tx" x="68" y="82">explanation and a note reference. Answer positions are balanced automatically.</text>
+    <text class="out" x="68" y="101" fill="#8A5A2B">→ bank[ ] with verified answers</text>
+  </g>
+  <path class="arrow" d="M400 526 V544"/>
+  <!-- 4 -->
+  <g transform="translate(40,548)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#B05A3C"/>
+    <circle cx="40" cy="34" r="16" fill="#B05A3C"/><text class="num" x="40" y="34">4</text>
+    <text class="h2" x="68" y="40">Concept cards</text>
+    <text class="tx" x="68" y="64">One concept per card: title · one-line idea · 1–3 diagrams · memory hook · exact terms ·</text>
+    <text class="tx" x="68" y="82">example. Attach every question to exactly one card.</text>
+    <text class="gate" x="68" y="101">◆ GATE A · independent review: accuracy vs. notes, every question answerable from its card</text>
+  </g>
+  <path class="arrow" d="M400 662 V680"/>
+  <!-- 5 -->
+  <g transform="translate(40,684)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#4E7F52"/>
+    <circle cx="40" cy="34" r="16" fill="#4E7F52"/><text class="num" x="40" y="34">5</text>
+    <text class="h2" x="68" y="40">Narration</text>
+    <text class="tx" x="68" y="64">Each card becomes beats: title → idea → each diagram item → hook → terms → example.</text>
+    <text class="tx" x="68" y="82">Spoken text is cleaned for the voice (names, symbols, units); a lint flags odd lines.</text>
+    <text class="out" x="68" y="101" fill="#4E7F52">→ build/narration.txt, reviewed line by line</text>
+  </g>
+  <path class="arrow" d="M400 798 V816"/>
+  <!-- 6 -->
+  <g transform="translate(40,820)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#7A4E7F"/>
+    <circle cx="40" cy="34" r="16" fill="#7A4E7F"/><text class="num" x="40" y="34">6</text>
+    <text class="h2" x="68" y="40">Voice</text>
+    <text class="tx" x="68" y="64">Audition 2–3 voices → record every line → trim silence → check every clip</text>
+    <text class="tx" x="68" y="82">(speaking rate, loudness, gaps, and that trimming cut no speech).</text>
+    <text class="gate" x="68" y="101">◆ GATE B · the learner approves a sample before the full recording</text>
+  </g>
+  <path class="arrow" d="M400 934 V952"/>
+  <!-- 7 -->
+  <g transform="translate(40,956)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#3D6E8F"/>
+    <circle cx="40" cy="34" r="16" fill="#3D6E8F"/><text class="num" x="40" y="34">7</text>
+    <text class="h2" x="68" y="40">Build the app</text>
+    <text class="tx" x="68" y="64">One self-contained HTML file with the clips inside: press play, beats reveal with</text>
+    <text class="tx" x="68" y="82">narration, chapter recall quiz, replay of missed concepts, progress saved.</text>
+    <text class="out" x="68" y="101" fill="#3D6E8F">→ &lt;course&gt;.html, double-click to open</text>
+  </g>
+  <path class="arrow" d="M400 1070 V1088"/>
+  <!-- 8 -->
+  <g transform="translate(40,1092)">
+    <rect class="box" width="720" height="112" rx="14"/><rect width="6" height="112" rx="3" fill="#8F3D52"/>
+    <circle cx="40" cy="34" r="16" fill="#8F3D52"/><text class="num" x="40" y="34">8</text>
+    <text class="h2" x="68" y="40">Verify like the learner</text>
+    <text class="tx" x="68" y="64">Sweep every beat, grade every question both ways, match every clip to its line, in the</text>
+    <text class="tx" x="68" y="82">learner's browser engine. Then a fresh agent tries to break it.</text>
+    <text class="gate" x="68" y="101">◆ GATE C · fix, re-run, then deliver the file path and an open command</text>
+  </g>
+
+  <!-- command strip -->
+  <g transform="translate(40,1232)">
+    <rect width="720" height="128" rx="14" fill="#E9ECF1"/>
+    <text class="lab" x="20" y="28">COMMANDS</text>
+    <text class="mono" x="20" y="54">python3 scripts/build.py course.json</text>
+    <text class="mono" x="20" y="74">uv run --with edge-tts python scripts/tts_render.py COURSE_DIR [--audition]</text>
+    <text class="mono" x="20" y="94">python3 scripts/tts_trim.py COURSE_DIR  &amp;&amp;  python3 scripts/tts_check.py COURSE_DIR</text>
+    <text class="mono" x="20" y="114">python3 scripts/build.py course.json  &amp;&amp;  swift scripts/webkit_test.swift app.html</text>
+  </g>
+
+  <!-- ============ right column ============ -->
+  <text class="lab" x="800" y="128">ONE CARD = ONE CONCEPT</text>
+  <g transform="translate(800,140)">
+    <rect class="box" width="360" height="392" rx="14"/>
+    <text class="sm" x="20" y="30">Each line below is one beat: shown, then spoken.</text>
+    <g transform="translate(20,48)">
+      <rect width="320" height="44" rx="10" fill="#F4F5F7"/>
+      <text x="14" y="28" style="font: 300 20px Inter, -apple-system, Helvetica, Arial, sans-serif; fill:#161D27">Title</text>
+    </g>
+    <g transform="translate(20,100)">
+      <rect width="320" height="40" rx="10" fill="#F4F5F7"/>
+      <text class="tx" x="14" y="25">One-line idea with a</text>
+      <rect x="148" y="12" width="74" height="18" rx="3" fill="#2F7A80" opacity=".22"/>
+      <text class="tx" x="150" y="25" style="font-weight:600; fill:#161D27">highlight</text>
+    </g>
+    <g transform="translate(20,148)">
+      <rect width="320" height="126" rx="10" fill="#F4F5F7"/>
+      <text class="h3" x="14" y="24">Diagram, item by item</text>
+      <text class="sm" x="14" y="46">tiles · groups · steps · vs comparison</text>
+      <text class="sm" x="14" y="64">flow with branches · rows · bars</text>
+      <text class="sm" x="14" y="82">big numbers · triangle · balance</text>
+      <text class="sm" x="14" y="100">timeline · quote · table · warning</text>
+      <text class="sm" x="14" y="118">exact definition</text>
+    </g>
+    <g transform="translate(20,282)">
+      <rect width="320" height="34" rx="10" fill="#2F7A80" opacity=".12"/>
+      <text class="tx" x="14" y="22" style="fill:#1F5A60; font-weight:600">Remember it like this (hook)</text>
+    </g>
+    <g transform="translate(20,324)">
+      <rect width="320" height="26" rx="8" fill="#FFFFFF" stroke="#2F7A80" stroke-width="1.4"/>
+      <text class="sm" x="12" y="17" style="fill:#2F7A80; font-weight:600">Exact terms to use in answers</text>
+    </g>
+    <text class="sm" x="34" y="374">Example from the notes</text>
+  </g>
+
+  <text class="lab" x="800" y="560">WHAT THE LEARNER DOES</text>
+  <g transform="translate(800,572)">
+    <rect class="box" width="360" height="376" rx="14"/>
+    <g class="tx">
+      <rect x="20" y="20" width="320" height="34" rx="17" fill="#2F7A80"/>
+      <text x="180" y="42" text-anchor="middle" style="fill:#fff; font-weight:600">▶ Press play once</text>
+      <text x="180" y="82" text-anchor="middle">Watch and listen; it advances by itself</text>
+      <text x="180" y="122" text-anchor="middle">Chapter ends → recall quiz</text>
+      <text x="180" y="138" text-anchor="middle" class="sm">one question per concept</text>
+      <text x="180" y="178" text-anchor="middle">Results: right and missed concepts</text>
+      <text x="180" y="218" text-anchor="middle">Replay only the missed concepts</text>
+      <text x="180" y="258" text-anchor="middle">Re-check the exact questions missed</text>
+      <text x="180" y="298" text-anchor="middle">Home shows weak spots and scores</text>
+    </g>
+    <path class="loop" d="M180 56 V66"/><path class="loop" d="M180 88 V106"/><path class="loop" d="M180 144 V162"/>
+    <path class="loop" d="M180 184 V202"/><path class="loop" d="M180 224 V242"/><path class="loop" d="M180 264 V282"/>
+    <path class="loop" d="M300 296 C 352 296, 352 37, 342 37"/>
+    <text class="sm" x="20" y="350">Progress lives in the browser; keys: Space, ← →, Esc.</text>
+  </g>
+
+  <text class="lab" x="800" y="976">VOICE FALLBACK</text>
+  <g transform="translate(800,988)">
+    <rect class="box" width="360" height="114" rx="14"/>
+    <rect x="16" y="22" width="102" height="34" rx="8" fill="#7A4E7F" opacity=".14"/>
+    <text class="sm" x="67" y="44" text-anchor="middle" style="fill:#5C3A60; font-weight:600">recorded clip</text>
+    <path class="arrow" d="M122 39 H138"/>
+    <rect x="142" y="22" width="96" height="34" rx="8" fill="#F4F5F7"/>
+    <text class="sm" x="190" y="44" text-anchor="middle">browser voice</text>
+    <path class="arrow" d="M242 39 H258"/>
+    <rect x="262" y="22" width="82" height="34" rx="8" fill="#F4F5F7"/>
+    <text class="sm" x="303" y="44" text-anchor="middle">read timer</text>
+    <text class="sm" x="16" y="84">Never silent, never stuck: each step takes over</text>
+    <text class="sm" x="16" y="98">when the one before it is missing or blocked.</text>
+  </g>
+
+  <text class="lab" x="800" y="1120">RULES THAT KEEP IT RIGHT</text>
+  <g transform="translate(800,1132)">
+    <rect class="box" width="360" height="228" rx="14"/>
+    <text class="tx" x="20" y="34">• Answer terms are copied from the notes, never</text>
+    <text class="tx" x="32" y="52">paraphrased.</text>
+    <text class="tx" x="20" y="78">• Outside facts are tagged [extra]; readings of</text>
+    <text class="tx" x="32" y="96">a figure are tagged [interpretation].</text>
+    <text class="tx" x="20" y="122">• Every question belongs to exactly one card.</text>
+    <text class="tx" x="20" y="148">• The builder never signs off on its own work.</text>
+    <text class="tx" x="20" y="174">• Test in the learner's real browser and device;</text>
+    <text class="tx" x="32" y="192">exit code 0 proves nothing.</text>
+    <text class="tx" x="20" y="218">• Play a voice sample before any long render.</text>
+  </g>
+</svg>
