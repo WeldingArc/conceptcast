@@ -7,8 +7,9 @@ Per clip (voice/clips by default, voice/raw with --raw):
 - speaking rate vs. the course median (letters per second): catches truncated or runaway clips
 - loudness: peak below -14 dB or mean below -38 dB means near-silent audio
 - silence: internal gaps over 1.2 s, or more than 1 s of silence at the start
-Very short lines (one or two words) often read "slow" because engines pad them to a minimum
-length; English words inside other languages often read "fast". Both are usually fine; listen if unsure.
+Usually harmless flags: very short lines (one or two words) read "slow" because engines pad
+them to a minimum length; number-heavy lines ("20 min, 58 percent") read "slow" because digits
+count as few letters; English inside other languages reads "fast". Listen to anything else.
 """
 
 import argparse
@@ -36,8 +37,12 @@ def main():
     ap.add_argument("--raw", action="store_true")
     a = ap.parse_args()
     cdir = pathlib.Path(a.course_dir).resolve()
+    if not (cdir / "build" / "voice_lines.json").exists():
+        raise SystemExit(f"{cdir / 'build' / 'voice_lines.json'} not found. Run build.py first (COURSE_DIR is the build output folder).")
     lines = json.loads((cdir / "build" / "voice_lines.json").read_text(encoding="utf-8"))["lines"]
     d = cdir / "voice" / ("raw" if a.raw else "clips")
+    if not (d / "manifest.json").exists():
+        raise SystemExit(f"No clips in {d}. Run tts_render.py{'' if a.raw else ' and tts_trim.py'} on {cdir} first.")
     man = json.loads((d / "manifest.json").read_text(encoding="utf-8"))
     ids = [i for i in lines if i in man and (d / f"{i}.mp3").exists()]
     with ThreadPoolExecutor(8) as ex:

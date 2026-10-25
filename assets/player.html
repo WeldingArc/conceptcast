@@ -289,8 +289,8 @@ b { font-weight: 650; }
 
 /* bars */
 .bars { display: grid; gap: 14px; text-align: left; width: 100%; max-width: 620px; margin: 0 auto; }
-.barrow { display: grid; grid-template-columns: 92px minmax(0, 1fr) 64px; gap: 10px; align-items: center; position: relative; }
-.bl { font-size: 15px; font-weight: 500; text-align: right; }
+.barrow { display: grid; grid-template-columns: minmax(64px, max-content) minmax(0, 1fr) max-content; gap: 10px; align-items: center; position: relative; }
+.bl { font-size: 15px; font-weight: 500; text-align: right; max-width: 34vw; overflow-wrap: break-word; word-break: normal; hyphens: auto; }
 .bt { height: 30px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 7%, transparent); overflow: hidden; }
 .bt i { display: block; height: 100%; width: 0; background: var(--cc); border-radius: 8px; transition: width 1s .1s var(--ease); }
 .barrow.on .bt i { width: var(--w); }
@@ -452,7 +452,7 @@ b { font-weight: 650; }
 
 @media (max-width: 420px) {
   .scene-in { gap: 14px; }
-  .barrow { grid-template-columns: 74px minmax(0, 1fr) 56px; }
+  .barrow { grid-template-columns: minmax(56px, max-content) minmax(0, 1fr) max-content; }
   .ctrl { gap: 2px; }
   .playbtn { width: 58px; height: 58px; margin: 0 4px; }
   .ctrl .pill { padding: 4px 9px; font-size: 13px; }
@@ -467,7 +467,12 @@ b { font-weight: 650; }
   var DATA = __DATA_JSON__;
   var CH = DATA.chapters, BANK = DATA.bank;
   var UI = DATA.ui || {};
-  function T(k, v) { var s = UI[k]; if (s == null) return k; if (v) for (var x in v) s = s.split("{" + x + "}").join(v[x]); return s; }
+  function T(k, v) {
+    var s = (v && +v.n === 1 && UI[k + "_one"] != null) ? UI[k + "_one"] : UI[k];   // "_one" = singular form
+    if (s == null) return k;
+    if (v) for (var x in v) s = s.split("{" + x + "}").join(v[x]);
+    return s;
+  }
   var app = document.getElementById("app");
   var CIRC = ["①", "②", "③", "④"];
   var RATES = [0.9, 1, 1.15, 1.3, 1.5];
@@ -848,7 +853,7 @@ b { font-weight: 650; }
     } else if (VT === "bars") {
       h += '<div class="bars">' + v.items.map(function (x, k) {
         var w = Math.max(0.5, x[1] / v.max * 100);
-        return "<div " + rv(k, "barrow") + ' style="--w:' + w + '%"><div class="bl">' + x[0] + '</div><div class="bt"><i></i></div><div class="bv"><span data-count="' + x[1] + '">0</span>' + esc(v.unit) + "</div>" +
+        return "<div " + rv(k, "barrow") + ' style="--w:' + w + '%"><div class="bl">' + x[0] + '</div><div class="bt"><i></i></div><div class="bv"><span data-count="' + x[1] + '">0</span>' + (/^[A-Za-z]/.test(v.unit || "") ? " " : "") + esc(v.unit || "") + "</div>" +
           (v.star === k ? "<div " + rv(v.items.length, "star") + ">★ " + v.starText + "</div>" : "") + "</div>";
       }).join("") + "</div>";
     } else if (VT === "big") {
@@ -1092,7 +1097,7 @@ b { font-weight: 650; }
     view = "quiz"; setHash("#quiz");
     renderQuiz();
   }
-  function answerText(q) { return q.type === "ox" ? (q.a === "O" ? T("oxTrue") : T("oxFalse")) : CIRC[q.a] + " " + q.opts[q.a]; }
+  function answerText(q) { return q.type === "ox" ? (q.a === "O" ? T("oxTrue") : T("oxFalse")) : (CIRC[q.a] || (q.a + 1) + ".") + " " + q.opts[q.a]; }
   function renderQuiz() {
     clearQuizTimer();
     var n = Q.qids.length, qid = Q.qids[Q.i], q = BANK[qid], card = CARD[QCARD[qid]].card, r = Q.res[Q.i];
@@ -1112,7 +1117,7 @@ b { font-weight: 650; }
       h += '<div class="fb ' + (r.ok ? "ok" : "no") + '" data-act="stopauto"><div class="fb-h">' + (r.ok ? IC.check + " " + T("correct") : IC.x + " " + T("wrong")) + "</div>" +
         (r.ok ? "" : '<div class="fb-a">' + T("answerIs", { a: answerText(q) }) + "</div>") + '<div class="fb-e">' + q.exp + "</div>" + (q.ref ? '<div class="fb-r">' + q.ref + "</div>" : "") + "</div>";
     } else {
-      h += '<div class="qhint" style="text-align:center">' + (q.type === "ox" ? T("hintOX") : T("hintMC")) + "</div>";
+      h += '<div class="qhint" style="text-align:center">' + (q.type === "ox" ? T("hintOX") : T("hintMC", { n: q.opts.length })) + "</div>";
     }
     h += "</div></div>";
     h += '<div class="ctrl"><button class="btn pri qnext" data-act="qnext"' + (r ? "" : " disabled") + ">" + (Q.i === n - 1 ? T("seeResult") : T("nextQ")) + ' <span class="auto"></span></button></div></div>';
@@ -1248,9 +1253,10 @@ b { font-weight: 650; }
     } else if (view === "quiz" && Q) {
       var q = BANK[Q.qids[Q.i]];
       if (!Q.res[Q.i]) {
-        var m = /^Digit([1-4])$/.exec(e.code) || /^Numpad([1-4])$/.exec(e.code);
+        var m = /^Digit([1-9])$/.exec(e.code) || /^Numpad([1-9])$/.exec(e.code);
         if (m && q.type === "mc" && +m[1] <= q.opts.length) { e.preventDefault(); answer(String(+m[1] - 1)); return; }
-        var ox = (e.code === "KeyO" || e.code === "KeyT") ? "O" : (e.code === "KeyX" || e.code === "KeyF") ? "X" : null;
+        var letter = /^Key([A-Z])$/.exec(e.code), L = letter ? letter[1] : "";
+        var ox = L && String(UI.oxKeysTrue || "TO").toUpperCase().indexOf(L) >= 0 ? "O" : L && String(UI.oxKeysFalse || "FX").toUpperCase().indexOf(L) >= 0 ? "X" : null;
         if (ox && q.type === "ox") { e.preventDefault(); answer(ox); return; }
       } else if (e.code === "Enter" || e.code === "ArrowRight") {
         if (tag === "BUTTON" && e.code === "Enter") return;

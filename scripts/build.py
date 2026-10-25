@@ -2,15 +2,18 @@
 """Build a ConceptCast lesson app from a course file.
 
     python3 scripts/build.py path/to/course.json [--out DIR] [--no-audio]
+    python3 scripts/build.py --print-strings [LANG]     # every translatable string, as JSON
 
 The course file is JSON (or a .py file that defines COURSE = {...}); see references/course-schema.md.
-Outputs (in --out, default: the course file's folder):
+Outputs (in --out, default: the course file's folder; this folder is also the COURSE_DIR that
+the tts_*.py scripts take):
   <id>.html               the app: one self-contained file, double-click to open
   <id>.body.html          the same page without <html>/<head> wrappers (for hosts that add their own)
-  build/narration.txt     every spoken line, beat by beat, for review
+  build/narration.txt     every spoken line (beats, then quiz lines, then fixed lines), for review
   build/voice_lines.json  {clip_id: text} for scripts/tts_render.py
-Recorded clips found in voice/clips/<id>.mp3 are embedded; lines without a clip fall back
+Recorded clips found in OUT/voice/clips/<id>.mp3 are embedded; lines without a clip fall back
 to the browser's built-in voice at runtime.
+Exit code 1 means the course has an error that would break the app; fix it and rebuild.
 """
 
 import argparse
@@ -28,7 +31,7 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from langpacks import COMMON_SYMBOLS, NON_LATIN, pack  # noqa: E402
+from langpacks import COMMON_SYMBOLS, NON_LATIN, PHRASES, UI, pack  # noqa: E402
 
 TEMPLATE = HERE.parent / "assets" / "player.html"
 VIS_TYPES = {"tiles", "groups", "steps", "vs", "flow", "rows", "bars", "big", "triangle", "balance",
@@ -68,9 +71,9 @@ def josa(word, pair):
 class Speaker:
     """Turns on-screen text into words a TTS voice reads well, for one language."""
 
-    def __init__(self, lang, names):
+    def __init__(self, lang, names, phrases, symbols):
         self.lang = lang.split("-")[0]
-        _, self.ph, self.sym = pack(lang)
+        self.ph, self.sym = phrases, symbols
         self.names = sorted((names or {}).items(), key=lambda kv: -len(kv[0]))
 
     def __call__(self, s):
@@ -154,11 +157,12 @@ def vis_beats(v, say, lang):
         for k, (lab, chain) in enumerate(v["rows"]):
             out.append((k, end(say(lab)) + " " + end(", ".join(say(c) for c in chain))))
     elif tp == "bars":
+        u = str(v.get("unit", "")).strip()
+        unit = ph["percent"] if u == "%" else (" " + say(u) if re.match(r"[A-Za-z]", u) else say(u))
         for k, (lab, val) in enumerate(v["items"]):
-            unit = ph["percent"] if v.get("unit") == "%" else (" " + v["unit"] if v.get("unit") and not ko else v.get("unit", ""))
             out.append((k, f"{say(lab)}, {'%g' % val}{unit}."))
-        if "star" in v:
-            out.append((len(v["items"]), end(say(v["items"][v["star"]][0]) + ", " + say(v["starText"]))))
+        if v.get("star") is not None:
+            out.append((len(v["items"]), end(say(v["items"][v["star"]][0]) + (", " + say(v["starText"]) if v.get("starText") else ""))))
     elif tp == "big":
         out += [(k, end(say(a)) + " " + end(say(b))) for k, (a, b) in enumerate(v["items"])]
     elif tp == "triangle":
@@ -181,12 +185,13 @@ def vis_beats(v, say, lang):
         out.append((0, end(say(v["text"]))))
     elif tp == "def":
         out.append((0, ph["def"].format(term=say(v["term"])) + end(say(v["text"]))))
-    fix = v.get("say", {})
+    fix = {int(k): txt for k, txt in v.get("say", {}).items()}   # keys were validated as integers
     keys = {i for i, _ in out}
     for k in fix:
-        if int(k) not in keys:
-            raise ValueError(f"'say' key {k} has no matching step in a {tp} diagram (steps: {sorted(keys)})")
-    return [(i, fix.get(str(i), fix.get(i, s))) for i, s in out]
+        if k not in keys:
+            raise CourseError(f"a {tp} diagram has a 'say' override for step {k}, but its steps are {sorted(keys)} "
+                              f"(-1 = the diagram's intro/title; see references/visual-types.md)")
+    return [(i, fix.get(i, s)) for i, s in out]
 
 
 def card_beats(c, say):
@@ -194,16 +199,18 @@ def card_beats(c, say):
     beats = [{"t": "title", "say": c.get("sayTitle") or end(say(c["title"]))},
              {"t": "one", "say": c.get("sayOne") or end(say(c["one"]))}]
     for vi, v in enumerate(c.get("vis", [])):
-        if v["type"] not in VIS_TYPES:
-            raise ValueError(f"card {c['id']}: unknown diagram type '{v['type']}' (allowed: {sorted(VIS_TYPES)})")
-        for i, s in vis_beats(v, say, say.lang):
+        try:
+            vb = vis_beats(v, say, say.lang)
+        except CourseError as e:
+            raise CourseError(f"card {c['id']}, diagram {vi + 1}: {e}") from None
+        for i, s in vb:
             beats.append({"t": "vis", "v": vi, "i": i, "say": s})
     if c.get("hook"):
         beats.append({"t": "hook", "say": ph["hook"] + (c.get("sayHook") or end(say(c["hook"])))})
     if c.get("terms"):
-        beats.append({"t": "terms", "say": c.get("sayTerms") or (ph["terms"] + end(", ".join(say(x) for x in c["terms"])))})
+        beats.append({"t": "terms", "say": ph["terms"] + (c.get("sayTerms") or end(", ".join(say(x) for x in c["terms"])))})
     if c.get("ex"):
-        beats.append({"t": "ex", "say": c.get("sayEx") or (ph["ex"] + end(say(c["ex"])))})
+        beats.append({"t": "ex", "say": ph["ex"] + (c.get("sayEx") or end(say(c["ex"])))})
     return beats
 
 
@@ -224,7 +231,122 @@ def html_vis(v):
             o[key] = [t(x) for x in o[key]]
     if "branch" in o:
         o["branch"] = [[t(b[0]), t(b[1]), b[2] if len(b) > 2 else ""] for b in o["branch"]]
+    if o["type"] == "bars":
+        o.setdefault("unit", "")
+        o.setdefault("starText", "")
+        if not o.get("max"):
+            o["max"] = max([x[1] for x in v["items"]] + [1])
     return o
+
+
+# ---------------------------------------------------------------- validation
+class CourseError(Exception):
+    """A course mistake that would break the app."""
+
+
+REQUIRED = {  # diagram type → required fields
+    "tiles": ["items"], "groups": ["groups"], "steps": ["items"], "vs": ["left", "right", "rows"],
+    "flow": ["nodes"], "rows": ["rows"], "bars": ["items"], "big": ["items"], "triangle": ["p", "o", "x", "caption"],
+    "balance": ["left", "right", "top", "bottom", "caption"], "timeline": ["items"], "quote": ["text", "by"],
+    "table": ["head", "rows"], "warn": ["text"], "def": ["term", "text"],
+}
+OX_TRUE, OX_FALSE = {"o", "true", "t", "yes", "1"}, {"x", "false", "f", "no", "0"}
+
+
+def validate(course):
+    """Return a list of errors that would break the app (empty = fine). Normalizes true/false answers in place."""
+    errs = []
+    if not isinstance(course.get("chapters"), list) or not course["chapters"]:
+        return ["the course has no 'chapters' list"]
+    bank_ids = {}
+    for qi, q in enumerate(course.get("bank", [])):
+        where = f"bank[{qi}] ({q.get('id', 'no id')})"
+        if "id" not in q:
+            errs.append(f"{where}: missing 'id'")
+            continue
+        if q["id"] in bank_ids:
+            errs.append(f"question id '{q['id']}' is used twice in the bank")
+        bank_ids[q["id"]] = q
+        if not q.get("q"):
+            errs.append(f"{where}: missing question text 'q'")
+        if q.get("type") == "mc":
+            opts = q.get("opts")
+            if not isinstance(opts, list) or len(opts) < 2:
+                errs.append(f"{where}: a multiple-choice question needs 'opts' with at least 2 options")
+            elif not isinstance(q.get("a"), int) or not 0 <= q["a"] < len(opts):
+                errs.append(f"{where}: 'a' must be the index of the correct option, 0..{len(opts) - 1} (got {q.get('a')!r})")
+        elif q.get("type") == "ox":
+            a = str(q.get("a")).strip().lower()
+            if a in OX_TRUE:
+                q["a"] = "O"
+            elif a in OX_FALSE:
+                q["a"] = "X"
+            else:
+                errs.append(f"{where}: a true/false answer 'a' must be \"O\" (true) or \"X\" (false) (got {q.get('a')!r})")
+        else:
+            errs.append(f"{where}: 'type' must be \"mc\" or \"ox\" (got {q.get('type')!r})")
+    card_ids, attached = {}, {}
+    for ci, ch in enumerate(course["chapters"]):
+        if not ch.get("name"):
+            errs.append(f"chapter {ci + 1}: missing 'name'")
+        if not isinstance(ch.get("cards"), list) or not ch["cards"]:
+            errs.append(f"chapter {ci + 1} ({ch.get('name', '')}): no 'cards'")
+            continue
+        for c in ch["cards"]:
+            cid = c.get("id")
+            if not cid:
+                errs.append(f"chapter {ci + 1}: a card has no 'id'")
+                continue
+            if cid in card_ids:
+                errs.append(f"card id '{cid}' is used twice (ids must be unique across the course)")
+            card_ids[cid] = True
+            for f in ("title", "one"):
+                if not c.get(f):
+                    errs.append(f"card {cid}: missing '{f}'")
+            for qid in c.get("qids", []):
+                if qid not in bank_ids:
+                    errs.append(f"card {cid}: question '{qid}' is not in the bank (the quiz would crash)")
+                attached.setdefault(qid, []).append(cid)
+            for vi, v in enumerate(c.get("vis", [])):
+                where = f"card {cid}, diagram {vi + 1}"
+                tp = v.get("type")
+                if tp not in REQUIRED:
+                    errs.append(f"{where}: unknown diagram type {tp!r} (allowed: {sorted(REQUIRED)})")
+                    continue
+                for f in REQUIRED[tp]:
+                    if f not in v:
+                        errs.append(f"{where} ({tp}): missing required field '{f}'")
+                for k in v.get("say", {}):
+                    try:
+                        int(k)
+                    except (TypeError, ValueError):
+                        errs.append(f"{where}: 'say' keys must be step numbers like \"0\" or \"-1\" (got {k!r})")
+                if tp == "vs" and v.get("win") not in (None, "left", "right"):
+                    errs.append(f"{where}: 'win' must be \"left\" or \"right\"")
+                if tp == "vs" and any(len(r) != 3 for r in v.get("rows", [])):
+                    errs.append(f"{where}: every vs row is [label, left text, right text]")
+                if tp == "bars":
+                    if any(len(x) != 2 or not isinstance(x[1], (int, float)) for x in v.get("items", [])):
+                        errs.append(f"{where}: bars items are [label, number]")
+                    elif v.get("star") is not None and not (isinstance(v["star"], int) and 0 <= v["star"] < len(v["items"])):
+                        errs.append(f"{where}: 'star' must be the index of a bar")
+                if tp == "flow" and any(len(b) < 2 or (len(b) > 2 and b[2] not in ("good", "bad", "")) for b in v.get("branch", [])):
+                    errs.append(f"{where}: each branch is [condition, outcome] or [condition, outcome, \"good\" | \"bad\"]")
+                if tp == "table" and any(len(r) != len(v.get("head", [])) for r in v.get("rows", [])):
+                    errs.append(f"{where}: every table row needs as many cells as 'head'")
+                if tp == "steps" and any(not isinstance(x, list) or len(x) != 2 for x in v.get("items", [])):
+                    errs.append(f"{where}: steps items are [name, description] (use \"\" for no description)")
+    for qid, cs in attached.items():
+        if len(cs) > 1:
+            errs.append(f"question '{qid}' is attached to several cards {cs}; attach each question to exactly one card")
+    return errs
+
+
+def print_strings(lang):
+    ui, ph, sym, has = pack(lang)
+    print(json.dumps({"ui": ui, "phrases": ph, "symbols": [list(x) for x in sym]}, ensure_ascii=False, indent=1))
+    if not has:
+        print(f"(no '{lang}' pack: these are the English strings to translate)", file=sys.stderr)
 
 
 def balance_options(bank, seed):
@@ -253,15 +375,35 @@ def load_course(path):
 # ---------------------------------------------------------------- main
 def build(course_path, out_dir=None, embed_audio=True):
     course = load_course(course_path)
+    errs = validate(course)
     cdir = pathlib.Path(course_path).resolve().parent
     out = pathlib.Path(out_dir).resolve() if out_dir else cdir
-    (out / "build").mkdir(parents=True, exist_ok=True)
     lang = course.get("lang", "en")
-    ui, ph, _ = pack(lang)
-    ui = dict(ui, **course.get("ui", {}))
-    ph = dict(ph, **course.get("phrases", {}))
-    say = Speaker(lang, course.get("names", {}))
-    say.ph = ph
+    ui, ph, sym, has_pack = pack(lang)
+    tpl = TEMPLATE.read_text(encoding="utf-8")
+    template_keys = set(re.findall(r'T\("([A-Za-z0-9]+)"', tpl)) - {"sayWrongPrefix"}
+    warn = []
+    if not has_pack:
+        miss_ui = sorted(k for k in template_keys if k not in course.get("ui", {}))
+        miss_ph = sorted(k for k in PHRASES["en"] if k not in course.get("phrases", {}))
+        if (miss_ui or miss_ph) and not course.get("allowEnglishFallback"):
+            errs.append(f"there is no '{lang}' language pack, and the course does not translate "
+                        f"{len(miss_ui)} UI strings and {len(miss_ph)} narration phrases (e.g. {(miss_ui + miss_ph)[:6]}). "
+                        f"Run `python3 scripts/build.py --print-strings en > strings.json`, translate the values, and put them "
+                        f"in the course as \"ui\", \"phrases\" and \"symbols\" (or set \"allowEnglishFallback\": true).")
+        elif miss_ui or miss_ph:
+            warn.append(f"no '{lang}' pack: {len(miss_ui) + len(miss_ph)} strings fall back to English (allowEnglishFallback)")
+    if errs:
+        raise CourseError("\n".join(errs))
+    (out / "build").mkdir(parents=True, exist_ok=True)
+    ui.update(course.get("ui", {}))
+    ph.update(course.get("phrases", {}))
+    ui["sayWrongPrefix"] = ph["wrongPrefix"]          # one source for the spoken wrong-answer prefix
+    lacking = sorted(k for k in template_keys if k not in ui)
+    if lacking:
+        warn.append(f"UI strings missing for '{lang}': {lacking} (add them to the course's \"ui\")")
+    sym = [tuple(x) for x in course.get("symbols", [])] + sym
+    say = Speaker(lang, course.get("names", {}), ph, sym)
     voice = dict({"engine": "browser"}, **course.get("voice", {}))
     vkey = f"{voice['engine']}:{voice.get('voice', '')}"
 
@@ -269,7 +411,7 @@ def build(course_path, out_dir=None, embed_audio=True):
     if course.get("shuffleOptions", True):
         balance_options(bank, course.get("id", "course"))
     bank_by = {q["id"]: q for q in bank}
-    problems, script, used = [], [], {}
+    problems, script, used = list(warn), [], {}
     risky = re.compile(r"[<>=✗○→↔↑↓÷×~\"+−()\[\]]" + (r"|[A-Za-z]{2,}" if say.lang in NON_LATIN else ""))
     allow = re.compile("|".join(map(re.escape, course.get("allowInNarration", []))) or r"(?!)")
 
@@ -283,8 +425,6 @@ def build(course_path, out_dir=None, embed_audio=True):
         for c in ch["cards"]:
             beats = card_beats(c, say)
             for qid in c.get("qids", []):
-                if qid not in bank_by:
-                    problems.append(f"{c['id']}: question {qid} is not in the bank")
                 used.setdefault(qid, []).append(c["id"])
             script.append(f"\n== {c['id']} {c['title']}")
             for k, b in enumerate(beats):
@@ -302,9 +442,6 @@ def build(course_path, out_dir=None, embed_audio=True):
     for q in bank:
         if q["id"] not in used:
             problems.append(f"question {q['id']} is not attached to any card (it will never be asked)")
-    for qid, cards_ in used.items():
-        if len(cards_) > 1:
-            problems.append(f"question {qid} is attached to several cards: {cards_}")
 
     # ---- spoken lines → clip ids
     lines = {}
@@ -320,6 +457,9 @@ def build(course_path, out_dir=None, embed_audio=True):
                 b["au"] = reg(b["say"])
     fixed_keys = ["listEnd", "ok", "oxO", "oxX", "resWrong", "resPerfect", "sample"]
     fixed = {k: {"say": ph[k], "au": reg(ph[k])} for k in fixed_keys}
+    script.append("\n######## Fixed lines (quiz feedback, results, voice sample)")
+    script += [f"  [{k}] {ph[k]}" for k in fixed_keys]
+    script.append("\n######## Quiz questions and wrong-answer lines")
     qbank = {}
     for qid in used:
         if qid not in bank_by:
@@ -336,6 +476,9 @@ def build(course_path, out_dir=None, embed_audio=True):
             q["sayA"] = sa
             q["auNo"] = reg(ph["wrongPrefix"] + sa)
         q["sayQ"], q["auQ"] = sq, reg(sq)
+        script.append(f"  {qid} [question] {sq}")
+        if q["type"] == "mc":
+            script.append(f"  {qid} [wrong answer] {ph['wrongPrefix'] + q['sayA']}")
         for txt in [sq] + ([q["sayA"]] if q["type"] == "mc" else []):
             if risky.search(allow.sub("", txt)):
                 problems.append(f"{qid} quiz narration — check how this reads aloud: {txt}")
@@ -356,11 +499,6 @@ def build(course_path, out_dir=None, embed_audio=True):
                 missing += 1
 
     # ---- template
-    tpl = TEMPLATE.read_text(encoding="utf-8")
-    keys = set(re.findall(r'T\("([A-Za-z0-9]+)"', tpl))
-    lacking = sorted(k for k in keys if k not in ui)
-    if lacking:
-        problems.append(f"UI strings missing for '{lang}': {lacking} (add them to course['ui'] or scripts/langpacks.py)")
     data = {
         "id": course.get("id", "course"), "title": course.get("title", ""), "subtitle": course.get("subtitle", ""),
         "lang": lang.split("-")[0], "locale": course.get("locale", {"ko": "ko-KR", "en": "en-US"}.get(lang.split("-")[0], lang)),
@@ -391,6 +529,9 @@ def build(course_path, out_dir=None, embed_audio=True):
     print(f"app: {out / (cid + '.html')} ({(out / (cid + '.html')).stat().st_size // 1024} KB)")
     print(f"spoken lines {len(lines)} · embedded clips {len(audio)} · without clip {len(lines) - len(audio)} "
           f"(voice: {voice['engine']}{' ' + voice.get('voice', '') if voice.get('voice') else ''})")
+    if voice["engine"] != "browser" and embed_audio and not audio:
+        print(f"note: no recorded clips in {clip_dir} yet, so this build uses the browser voice. Record with "
+              f"tts_render.py {out}, then tts_trim.py, then rebuild.")
     if problems:
         print(f"\nto check ({len(problems)}):")
         for p in problems:
@@ -400,8 +541,18 @@ def build(course_path, out_dir=None, embed_audio=True):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("course")
+    ap.add_argument("course", nargs="?")
     ap.add_argument("--out")
     ap.add_argument("--no-audio", action="store_true", help="do not embed recorded clips")
+    ap.add_argument("--print-strings", nargs="?", const="en", metavar="LANG", help="print every translatable string as JSON")
     a = ap.parse_args()
-    build(a.course, a.out, not a.no_audio)
+    if a.print_strings:
+        print_strings(a.print_strings)
+        sys.exit(0)
+    if not a.course:
+        ap.error("give a course file")
+    try:
+        build(a.course, a.out, not a.no_audio)
+    except CourseError as e:
+        print("The course has errors that would break the app:\n- " + str(e).replace("\n", "\n- "), file=sys.stderr)
+        sys.exit(1)

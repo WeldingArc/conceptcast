@@ -42,9 +42,13 @@ def main():
     ap.add_argument("--bitrate", default="40k")
     a = ap.parse_args()
     cdir = pathlib.Path(a.course_dir).resolve()
+    if not (cdir / "build" / "voice_lines.json").exists():
+        raise SystemExit(f"{cdir / 'build' / 'voice_lines.json'} not found. Run build.py first (COURSE_DIR is the build output folder).")
     lines = json.loads((cdir / "build" / "voice_lines.json").read_text(encoding="utf-8"))["lines"]
     raw, clips = cdir / "voice" / "raw", cdir / "voice" / "clips"
     clips.mkdir(parents=True, exist_ok=True)
+    if not (raw / "manifest.json").exists():
+        raise SystemExit(f"No recordings in {raw}. Run tts_render.py {cdir} first.")
     raw_man = json.loads((raw / "manifest.json").read_text(encoding="utf-8"))
     old = json.loads((clips / "manifest.json").read_text(encoding="utf-8")) if (clips / "manifest.json").exists() else {}
 

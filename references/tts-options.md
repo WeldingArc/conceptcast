@@ -2,8 +2,9 @@
 
 Offer these at the start of every project (`SKILL.md`, Step 0), with a recommendation. Then
 **audition before recording**: put 2–3 candidates in `voice.candidates` and run
-`tts_render.py COURSE_DIR --audition`. It records the same line in each voice and plays them.
-Never start a long recording without the learner choosing a sample.
+`tts_render.py COURSE_DIR --audition`. It records the same line in each voice and plays them out
+loud; use `--no-play` for silent tests. Never start a long recording without the learner choosing
+a sample.
 
 | Engine | Quality | Cost and setup | Offline | Status in this repo |
 |---|---|---|---|---|
@@ -31,8 +32,8 @@ Run every edge command through `uv run --with edge-tts python scripts/tts_render
 - **Listing voices:** `uv run --with edge-tts python scripts/tts_render.py --list-voices edge ko`
   (any locale prefix: `en`, `ja`, `es-MX`, ...).
 - **Good starting voices:**
-  - Korean: `ko-KR-HyunsuMultilingualNeural` (male; chosen by the first learner), `ko-KR-SunHiNeural`
-    (female), `ko-KR-InJoonNeural` (male).
+  - Korean: `ko-KR-HyunsuMultilingualNeural` (male), `ko-KR-SunHiNeural` (female),
+    `ko-KR-InJoonNeural` (male).
   - English: `en-US-AndrewMultilingualNeural`, `en-US-AvaMultilingualNeural`, `en-US-EmmaMultilingualNeural`,
     `en-GB-SoniaNeural`.
   - Japanese: `ja-JP-NanamiNeural`, `ja-JP-KeitaNeural`. Chinese: `zh-CN-XiaoxiaoNeural`, `zh-CN-YunxiNeural`.

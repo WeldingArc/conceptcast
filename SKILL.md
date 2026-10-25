@@ -18,6 +18,12 @@ that never stalls.
 Read `references/method.md` once before the first build; it explains why each step exists.
 The full pipeline is drawn in `diagram/pipeline.svg`.
 
+**Where things live.** `SKILL` below means this skill's folder (usually `~/.claude/skills/conceptcast`).
+Never edit files there: it is a git clone, updated with `git pull`. Everything course-specific,
+including translations, goes in the course's own folder (`COURSE_DIR`), next to its `course.json`.
+Run the scripts by absolute path, e.g. `python3 SKILL/scripts/build.py COURSE_DIR/course.json`.
+The build writes into `COURSE_DIR`, and the voice scripts take `COURSE_DIR` as their argument.
+
 ## Step 0 — Ask first (one AskUserQuestion call, before any work)
 
 Ask these together; offer a recommended default for each:
@@ -26,6 +32,12 @@ Ask these together; offer a recommended default for each:
    sections)? Is there an exam with topics, weights, or a date?
 2. **Language** of the material and of the exam answers. Exact terms in that language matter more
    than anything else.
+   - Built-in language packs: **en** and **ko**.
+   - For any other language, plan to translate the app's strings into the course file:
+     run `python3 SKILL/scripts/build.py --print-strings en > COURSE_DIR/strings.json`,
+     translate the values, and put them in the course as `"ui"`, `"phrases"` and `"symbols"`.
+   - The build refuses to run until these strings are translated, so the app never comes out
+     half in English.
 3. **Where it will be used.** Device and browser (e.g. Mac + Safari, iPhone, Windows + Chrome).
    This decides how you test (Step 7).
 4. **Voice.** Offer these options (details and setup: `references/tts-options.md`):
@@ -85,51 +97,83 @@ that a question needs but the card doesn't teach.
 ## Step 4 — Build and review the narration
 
 ```bash
-python3 scripts/build.py path/to/course.json
+python3 SKILL/scripts/build.py COURSE_DIR/course.json
 ```
 
-This writes:
+**Exit code 1** means a course error that would break the app. It prints one clear line per
+problem. Typical causes:
+
+- a question id that isn't in the bank;
+- a question attached to two cards;
+- duplicate ids;
+- a missing required diagram field;
+- a true/false answer that isn't "O" or "X";
+- untranslated strings.
+
+Fix them and rebuild.
+
+When the build succeeds it writes into `COURSE_DIR`:
 
 - `<id>.html`: the app.
-- `build/narration.txt`: every spoken line.
+- `build/narration.txt`: every spoken line. Concept beats come first, then the fixed lines
+  (quiz feedback, results, voice sample), then each quiz question with its wrong-answer line.
 - `build/voice_lines.json`: the lines to record.
 
-It also lists lines that may read badly aloud (symbols, stray Latin letters in non-Latin text),
-questions not attached to any card, and template syntax errors.
+It also lists "to check" warnings:
 
-Read `build/narration.txt` end to end. Fix awkward lines with overrides (`sayOne`, `sayHook`,
-`say: {index: text}` on a diagram; see `references/narration.md`), and teach pronunciations
-through `names`. Rebuild until clean.
+- lines that may read badly aloud (symbols, stray Latin letters in non-Latin text);
+- questions not attached to any card.
+
+Read `build/narration.txt` end to end. Fix awkward lines with overrides; see
+`references/narration.md`:
+
+- `sayTitle` and `sayOne`;
+- `sayHook`, `sayTerms` and `sayEx` (these replace only the text after the spoken prefix);
+- `say: {index: text}` on a diagram;
+- `sayQ` and `sayA` on a question.
+
+Teach pronunciations through `names`, and change spoken symbols through `symbols`. Rebuild until
+clean.
 
 ## Step 5 — Voice (skip for browser-only)
 
-1. **Audition.** Put 2–3 options in `voice.candidates`, then run:
+1. **Audition.** Put 2–3 options in `voice.candidates` in the course file. Find voice names with
+   `uv run --with edge-tts python SKILL/scripts/tts_render.py --list-voices edge <lang>`. Then run:
    ```bash
-   uv run --with edge-tts python scripts/tts_render.py COURSE_DIR --audition
+   uv run --with edge-tts python SKILL/scripts/tts_render.py COURSE_DIR --audition
    ```
-   This records the same line in each voice and plays them on the speakers.
+   - This records the same narration line in each voice and **plays them out loud** for the
+     learner. Add `--no-play` when you test silently.
+   - It reads `voice.candidates` straight from the course file, so no rebuild is needed between
+     auditions.
+   - Then set `voice.voice` to the chosen voice and rebuild.
 
    **Gate B:** the learner picks a voice. Never start a long recording without this sign-off.
 2. **Record everything:**
    ```bash
-   uv run --with edge-tts python scripts/tts_render.py COURSE_DIR
+   uv run --with edge-tts python SKILL/scripts/tts_render.py COURSE_DIR
    ```
    It caches clips by text, so a re-run records only changed lines. Expect about 1 minute per
    100 lines with edge-tts. If a provider fails twice the same way, stop and fix the cause (key,
    model name, network); don't retry blindly.
 3. **Trim silence:**
    ```bash
-   python3 scripts/tts_trim.py COURSE_DIR
+   python3 SKILL/scripts/tts_trim.py COURSE_DIR
    ```
    It trims padding and proves no speech was cut.
 4. **Check every clip:**
    ```bash
-   python3 scripts/tts_check.py COURSE_DIR
+   python3 SKILL/scripts/tts_check.py COURSE_DIR
    ```
-   One-word lines read "slow" and English inside other languages reads "fast"; that is normal.
-   Anything else, listen to it.
-5. **Rebuild** with `python3 scripts/build.py course.json`, which embeds the clips. The file
-   grows by about 0.4 MB per spoken minute.
+   These flags are normally harmless:
+   - one- or two-word lines read "slow";
+   - number-heavy lines ("20 min, 58 percent") read "slow";
+   - English inside other languages reads "fast".
+
+   Listen to anything else.
+5. **Rebuild** with `python3 SKILL/scripts/build.py COURSE_DIR/course.json`, which embeds the
+   clips. The file grows by about 0.4 MB per spoken minute. The build says so when no clips were
+   found.
 
 ## Step 6 — Build
 
@@ -142,8 +186,8 @@ through `names`. Rebuild until clean.
 
 ## Step 7 — Verify like the learner (Gate C)
 
-- **Mechanical, all items, never samples.** On macOS, run `swift scripts/webkit_test.swift app.html`
-  (Safari's engine, silent). It covers:
+- **Mechanical, all items, never samples.** On macOS, run
+  `swift SKILL/scripts/webkit_test.swift COURSE_DIR/<id>.html` (Safari's engine, silent). It covers:
   - every beat renders;
   - narrated playback advances, ←/→ move exactly one beat, and pause stops audio;
   - voice-off mode advances;
@@ -173,9 +217,9 @@ copy, note size limits: recorded audio makes the file large.
 |---|---|
 | `assets/player.html` | The app template (language-neutral; text comes from language packs) |
 | `scripts/build.py` | course.json → app, narration script, voice line list, lint |
-| `scripts/langpacks.py` | UI strings, narration phrases and spoken-symbol rules per language (en, ko). Add a language by copying `en` |
+| `scripts/langpacks.py` | Built-in UI strings, narration phrases and spoken-symbol rules (en, ko). Other languages: translate `build.py --print-strings` into the course file |
 | `scripts/tts_render.py` | Record lines with the chosen engine; `--audition`, `--list-voices` |
 | `scripts/tts_trim.py`, `scripts/tts_check.py` | Trim and check every clip |
 | `scripts/webkit_test.swift` | Silent Safari-engine test of a built app (macOS) |
 | `references/` | Method, course schema, diagram types, narration rules, TTS options, verification prompts |
-| `examples/memory-basics/` | A small English course, built with a neural voice |
+| `examples/memory-basics/` | A small English course, built with a neural voice. Copy it to a work folder before building, since its recordings aren't in git |

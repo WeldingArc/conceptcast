@@ -73,14 +73,18 @@ Requirements:
 - optional: Node (template syntax check)
 - optional: macOS with Swift (Safari-engine tests)
 
+Work on a copy, so the bundled demo keeps its voice. Its recordings aren't in git, so
+rebuilding it in place would produce a version without them.
+
 ```bash
-python3 scripts/build.py examples/memory-basics/course.json        # app + narration script + lines to record
-uv run --with edge-tts python scripts/tts_render.py examples/memory-basics --audition   # hear candidate voices
-uv run --with edge-tts python scripts/tts_render.py examples/memory-basics              # record every line
-python3 scripts/tts_trim.py examples/memory-basics                 # trim silence, prove no speech was cut
-python3 scripts/tts_check.py examples/memory-basics                # rate, loudness, gaps for every clip
-python3 scripts/build.py examples/memory-basics/course.json        # rebuild with the clips embedded
-swift scripts/webkit_test.swift examples/memory-basics/memory-basics.html   # silent Safari-engine test
+cp -r examples/memory-basics ~/my-course && C=~/my-course
+python3 scripts/build.py $C/course.json                            # app + narration script + lines to record
+uv run --with edge-tts python scripts/tts_render.py $C --audition  # hear candidate voices (add --no-play for silence)
+uv run --with edge-tts python scripts/tts_render.py $C             # record every line
+python3 scripts/tts_trim.py $C                                     # trim silence, prove no speech was cut
+python3 scripts/tts_check.py $C                                    # rate, loudness, gaps for every clip
+python3 scripts/build.py $C/course.json                            # rebuild with the clips embedded
+swift scripts/webkit_test.swift $C/memory-basics.html              # silent Safari-engine test
 ```
 
 The course format is in [`references/course-schema.md`](references/course-schema.md). Diagram
@@ -100,9 +104,12 @@ Details and setup: [`references/tts-options.md`](references/tts-options.md).
 
 ## Languages
 
-The player and narration ship with English and Korean language packs. To add a language, copy
-the `en` entries in [`scripts/langpacks.py`](scripts/langpacks.py) and translate about 80 short
-strings. Any string can also be overridden per course.
+The player and narration ship with English and Korean language packs. For any other language,
+`python3 scripts/build.py --print-strings en` prints every on-screen string, narration phrase and
+spoken-symbol rule. Translate them into the course file. The build refuses to run until they are
+translated, so an app never comes out half in English. Any string can also be overridden per
+course, in any language. To add a language for everyone, add a pack to
+[`scripts/langpacks.py`](scripts/langpacks.py) and open a pull request.
 
 ## Repository layout
 

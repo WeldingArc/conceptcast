@@ -139,10 +139,12 @@ The builder had tested past all three.
 - **Subject.** Nothing in the player is subject-specific. Courses differ only in their cards.
   Math and science work well with `steps`, `flow`, `table` and `def`; history with `timeline`
   and `quote`; languages with `tiles`, `table` and `vs`.
-- **Language.** Add a language pack in `scripts/langpacks.py`: UI strings, narration phrases,
-  spoken symbols. For scripts that don't use Latin letters, add the language code to `NON_LATIN`.
-  Its grammar rules (like Korean particles) go in `build.py` only if generated sentences need them.
-  Otherwise, write overrides.
+- **Language.** English and Korean are built in. For any other language, translate the strings
+  printed by `build.py --print-strings` into the course file (`ui`, `phrases`, `symbols`). Don't
+  edit the installed skill: it is a git clone. To make a language permanent for everyone, add it
+  as a pack in `scripts/langpacks.py` and send a pull request. For scripts that don't use Latin
+  letters, the pack should also add its code to `NON_LATIN`. Grammar rules (like Korean particles)
+  go in `build.py` only if generated sentences need them; otherwise, write overrides.
 - **Learner.** For a stronger learner, use fewer beats per card, faster default speed and
   harder questions. For a weaker one, use more `warn` beats on classic confusions and more
   concrete examples.

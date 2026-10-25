@@ -4,6 +4,9 @@ Every beat has one spoken line. `build.py` generates it from the screen text, th
 the voice. You review `build/narration.txt` and override what reads badly. The learner hears every
 line, often with eyes half-closed, so the narration is the lesson.
 
+Everything the learner can hear is in `build/narration.txt`: the concept beats, then the fixed
+lines (quiz feedback, results, voice sample), then every quiz question and wrong-answer line.
+
 ## How lines are generated
 
 | Beat | Generated line (English pack) |
@@ -43,11 +46,13 @@ languages) runs of Latin letters. Add tokens that are fine aloud to `allowInNarr
 
 | Where | Field |
 |---|---|
-| card title / idea / hook / terms / example | `sayTitle`, `sayOne`, `sayHook`, `sayTerms`, `sayEx` |
+| card title / idea | `sayTitle`, `sayOne` (replace the whole line) |
+| hook / terms / example | `sayHook`, `sayTerms`, `sayEx` (replace the text after the spoken prefix) |
 | one diagram beat | `"say": {"2": "text"}` on the diagram, keyed by item index (`-1` = intro) |
 | chapter intro / outro | `sayIntro`, `sayOutro` on the chapter |
 | quiz question / correct option | `sayQ`, `sayA` on the question |
-| phrase templates | `"phrases": {...}` at course level (keys in `scripts/langpacks.py`) |
+| phrase templates and prefixes | `"phrases": {...}` at course level (`build.py --print-strings` lists every key) |
+| spoken symbols | `"symbols": [["↑", " sube"], ...]` at course level, applied before the pack's rules |
 
 Write overrides when:
 

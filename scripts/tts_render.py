@@ -2,8 +2,13 @@
 """Record every spoken line of a course with the voice chosen in course.json → "voice".
 
     python3 scripts/tts_render.py COURSE_DIR                 # record build/voice_lines.json (missing clips only)
-    python3 scripts/tts_render.py COURSE_DIR --audition      # record one sample per candidate voice and play them
+    python3 scripts/tts_render.py COURSE_DIR --audition      # one sample per voice in voice.candidates, played aloud
+    python3 scripts/tts_render.py COURSE_DIR --audition --no-play   # same, silent (for tests)
     python3 scripts/tts_render.py --list-voices edge ko      # list voices of an engine for a language
+
+COURSE_DIR is the build output folder (the course file's folder unless you built with --out).
+Run build.py first: it writes build/voice_lines.json. --audition reads the voice settings straight
+from the course file in COURSE_DIR when there is one, so edits to voice.candidates apply without a rebuild.
 
 Engines (course.json → "voice": {"engine": ..., "voice": ..., ...}):
   edge        Microsoft neural voices via edge-tts. Free, online, no key. Run through uv:
@@ -131,7 +136,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("course_dir", nargs="?")
     ap.add_argument("--audition", action="store_true", help="one sample per voice in course.json → voice.candidates")
-    ap.add_argument("--text", help="sample text for --audition (default: the first concept's narration)")
+    ap.add_argument("--text", help="sample text for --audition (default: a typical narration line from the course)")
     ap.add_argument("--no-play", action="store_true")
     ap.add_argument("--list-voices", nargs=2, metavar=("ENGINE", "LANG"))
     ap.add_argument("--workers", type=int)
@@ -142,16 +147,29 @@ def main():
     cdir = pathlib.Path(a.course_dir).resolve()
     if not FFMPEG:
         sys.exit("ffmpeg is required (brew install ffmpeg)")
-    spec = json.loads((cdir / "build" / "voice_lines.json").read_text(encoding="utf-8"))
+    vl = cdir / "build" / "voice_lines.json"
+    if not vl.exists():
+        sys.exit(f"{vl} not found. Run `python3 scripts/build.py <course file>` first (COURSE_DIR is the build output folder).")
+    spec = json.loads(vl.read_text(encoding="utf-8"))
     cfg, lines = spec["voice"], spec["lines"]
+    if a.audition:  # use the latest voice settings from the course file, so candidate edits need no rebuild
+        for name in ("course.json", "course.py"):
+            cf = cdir / name
+            if cf.exists():
+                import runpy
+                course = json.loads(cf.read_text(encoding="utf-8")) if name.endswith(".json") else runpy.run_path(str(cf))["COURSE"]
+                cfg = dict({"engine": "browser"}, **course.get("voice", {}))
+                break
     engine = cfg["engine"]
     if engine == "browser":
         print("voice.engine is 'browser': nothing to record.")
         return
 
     if a.audition:
+        engine = cfg["engine"]
         cands = cfg.get("candidates") or [{"engine": engine, "voice": cfg.get("voice")}]
-        text = a.text or next(iter(lines.values()))
+        vals = list(lines.values())
+        text = a.text or next((x for x in vals[2:] if 40 <= len(x) <= 160), vals[0])
         out = cdir / "voice" / "audition"
         out.mkdir(parents=True, exist_ok=True)
         for i, c in enumerate(cands, 1):

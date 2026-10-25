@@ -1,30 +1,38 @@
-"""Language packs: on-screen UI strings + narration phrases + text-to-speech cleanup rules.
+"""Language packs: on-screen UI strings + narration phrases + spoken-symbol rules.
 
-Add a language by copying the "en" pack, translating the values, and (optionally) adding
-language-specific cleanup in `speak_rules`. A course can override any key with
-course["ui"] / course["phrases"].
+Built-in packs: en, ko. For any other language, don't edit this file in your installed copy
+(it is a git clone): put translations in the course file instead.
+
+    python3 scripts/build.py --print-strings en > strings.json
+
+prints every key ({"ui": ..., "phrases": ..., "symbols": ...}); translate the values and paste
+them into course.json as "ui", "phrases" and "symbols". build.py refuses to build a language
+without a pack until every key is translated (or "allowEnglishFallback": true is set).
+Keys ending in "_one" are the singular form used when {n} is 1.
+To share a language with everyone, add it here as a new pack and send a pull request.
 """
 
 UI = {
     "en": {
-        "ddayLeft": "D-{n}", "ddayToday": "Exam day", "ddayPast": "Exam done",
+        "ddayLeft": "{n} days left", "ddayLeft_one": "1 day left", "ddayToday": "Exam day", "ddayPast": "Exam done",
         "fromStart": "{name} from the start", "heroStart": "Start here",
-        "heroWrapped": "You've seen all {n} chapters · go again", "heroResume": "Continue",
+        "heroWrapped": "You've seen all {n} chapters · go again", "heroWrapped_one": "You've seen the chapter · go again", "heroResume": "Continue",
         "heroHint": "Press play, then just watch and listen. It moves on by itself.",
         "restartFrom": "Restart from {first}", "speed": "Speed", "voiceSample": "Hear the voice",
         "voiceSelect": "Choose voice", "recordedVoice": "Recorded voice", "systemVoiceSuffix": " (built-in)",
         "voiceBlockedNote": "The browser blocked the voice. Press play again to retry.",
         "noVoiceNote": "No voice found for this language. Screens advance at reading speed.",
-        "weakBtn": "Replay {n} missed concepts → re-check", "chapters": "Chapters",
-        "conceptsN": "{n} concepts", "seenStat": "Seen {a}/{b}", "checkStat": "Recall {r}/{n} ({p}%)",
+        "weakBtn": "Replay {n} missed concepts → re-check", "weakBtn_one": "Replay 1 missed concept → re-check", "chapters": "Chapters",
+        "conceptsN": "{n} concepts", "conceptsN_one": "1 concept", "seenStat": "Seen {a}/{b}", "checkStat": "Recall {r}/{n} ({p}%)",
         "missedStat": "Missed {n}", "watch": "Watch", "recall": "Recall check", "recheck": "Re-check",
         "keysHint": "Keys: Space play/pause · ← → back/next · Esc home",
         "voiceOn": "Voice on", "voiceOff": "Voice off", "home": "Home", "homeBtn": "Home",
         "restartConcept": "Restart this concept", "prev": "Back", "play": "Play", "next": "Next", "pause": "Pause",
         "chapterKick": "Chapter {n}", "chapterDone": "{name} done",
         "chapterDoneSub": "You've seen all {n} concepts. Now let's check what stuck.",
-        "startRecall": "Start recall check ({n} questions)", "nextChapter": "Next: {name}",
-        "listEnd": "Replay done", "listEndSub": "Let's re-check the {n} concepts you just saw.",
+        "chapterDoneSub_one": "You've seen the concept. Now let's check what stuck.",
+        "startRecall": "Start recall check ({n} questions)", "startRecall_one": "Start recall check (1 question)", "nextChapter": "Next: {name}",
+        "listEnd": "Replay done", "listEndSub": "Let's re-check the {n} concepts you just saw.", "listEndSub_one": "Let's re-check the concept you just saw.",
         "startRecheck": "Start re-check", "conceptKick": "{chapter} · Concept {n}",
         "hookLabel": "Remember it like this", "termsLabel": "Exact terms to use", "exLabel": "Example from the notes",
         "defLabel": "Definition · use as written", "warnLabel": "Don't mix this up", "winDefault": "Stronger",
@@ -33,12 +41,12 @@ UI = {
         "noVoiceTitle": "No voice available in this browser",
         "quizOX": "True / False", "quizMC": "Multiple choice", "conceptChip": "Concept · {t}",
         "correct": "Correct", "wrong": "Not quite", "answerIs": "Answer: {a}",
-        "hintOX": "Keys: T or O = true, F or X = false", "hintMC": "Keys: 1–4",
+        "hintOX": "Keys: T or O = true, F or X = false", "hintMC": "Keys: 1–{n}", "oxKeysTrue": "TO", "oxKeysFalse": "FX",
         "seeResult": "See results", "nextQ": "Next question", "result": "Results",
         "band90": "Solid. Keep it up.", "band70": "Almost there. Just the missed ones once more.",
         "bandLow": "That's fine. Replay the missed concepts and try again.",
-        "replayMissed": "Replay {n} missed concepts", "voiceSwitched": "I'll read with this voice.",
-        "sayWrongPrefix": "Not quite. The answer is ", "oxTrue": "True", "oxFalse": "False",
+        "replayMissed": "Replay {n} missed concepts", "replayMissed_one": "Replay 1 missed concept", "voiceSwitched": "I'll read with this voice.",
+        "oxTrue": "True", "oxFalse": "False",
     },
     "ko": {
         "ddayLeft": "D-{n}", "ddayToday": "D-DAY", "ddayPast": "시험 끝",
@@ -67,12 +75,12 @@ UI = {
         "noVoiceTitle": "이 브라우저에 목소리가 없어요",
         "quizOX": "O / X", "quizMC": "객관식", "conceptChip": "개념 · {t}",
         "correct": "정답", "wrong": "오답", "answerIs": "정답: {a}",
-        "hintOX": "O·X 키로도 고를 수 있어요", "hintMC": "1–4 키로도 고를 수 있어요",
+        "hintOX": "O·X 키로도 고를 수 있어요", "hintMC": "1–{n} 키로도 고를 수 있어요", "oxKeysTrue": "O", "oxKeysFalse": "X",
         "seeResult": "결과 보기", "nextQ": "다음 문제", "result": "결과",
         "band90": "탄탄해요. 이대로 가면 돼요.", "band70": "거의 다 왔어요. 틀린 것만 한 번 더.",
         "bandLow": "괜찮아요. 틀린 개념만 다시 보면 돼요.",
         "replayMissed": "틀린 개념 {n}개 다시 보기", "voiceSwitched": "이 목소리로 읽어 드릴게요.",
-        "sayWrongPrefix": "아쉬워요. 정답은 ", "oxTrue": "O", "oxFalse": "X",
+        "oxTrue": "O", "oxFalse": "X",
     },
 }
 
@@ -122,6 +130,10 @@ SYMBOLS = {
            (" = ", ", 즉 "), (" vs ", " 대 "), ("VS", "대"), ("✗", " 아님"), ("○", " 맞음"), (" & ", ", "), ("&", ", "),
            ("cf.", "참고로")],
 }
+# Used for a language without a pack, before the course's own "symbols": punctuation only, no words
+NEUTRAL_SYMBOLS = [(" → ", ", "), ("→", ", "), (" ↔ ", ", "), ("↔", ", "), (" ↑", ""), ("↑", ""), (" ↓", ""), ("↓", ""),
+                   (" = ", ", "), (" vs ", ", "), (" VS ", ", "), ("✗", ""), ("○", ""), (" & ", ", "), ("&", ", ")]
+
 # Shared by every language
 COMMON_SYMBOLS = [("**", ""), ("…", ""), ("...", ""), ("①", ""), ("②", ""), ("③", ""), ("④", ""),
                   (" · ", ", "), ("·", ", "), (" / ", ", "), ("/", ", "), (" + ", ", "), ("+", ", "), ("~", "")]
@@ -131,5 +143,8 @@ NON_LATIN = {"ko", "ja", "zh", "ru", "ar", "hi", "th", "he", "el", "uk"}
 
 
 def pack(lang):
+    """(ui, phrases, symbols, has_pack). Without a pack: English strings as a template, neutral symbols."""
     base = lang.split("-")[0]
-    return UI.get(base, UI["en"]), PHRASES.get(base, PHRASES["en"]), SYMBOLS.get(base, SYMBOLS["en"])
+    if base in UI:
+        return dict(UI[base]), dict(PHRASES[base]), list(SYMBOLS[base]), True
+    return dict(UI["en"]), dict(PHRASES["en"]), list(NEUTRAL_SYMBOLS), False
